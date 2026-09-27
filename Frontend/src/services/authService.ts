@@ -71,7 +71,12 @@ export const authService = {
   return data.user;
 },
 
-  register: async (name: string, email: string, password: string) => {
+ register: async (
+  name: string,
+  email: string,
+  password: string,
+  passwordConfirmation: string
+) => {
   const response = await fetch(`${API_URL}/register`, {
     method: 'POST',
     headers: {
@@ -82,7 +87,7 @@ export const authService = {
       name,
       email,
       password,
-      password_confirmation: password
+      password_confirmation: passwordConfirmation
     })
   });
 
