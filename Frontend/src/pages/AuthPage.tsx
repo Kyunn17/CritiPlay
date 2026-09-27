@@ -7,6 +7,7 @@ export default function AuthPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordConfirmation, setPasswordConfirmation] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   
@@ -27,12 +28,22 @@ const handleSubmit = async (e: React.FormEvent) => {
 
   try {
     if (isLoginMode) {
-      await authService.login(email, password);
-      navigate('/');
-    } else {
-      await authService.register(name, email, password);
-      navigate(`/verify-otp?email=${encodeURIComponent(email)}`);
-    }
+  await authService.login(email, password);
+  navigate('/');
+} else {
+  if (password !== passwordConfirmation) {
+    setError('Konfirmasi password tidak cocok.');
+    return;
+  }
+
+  await authService.register(
+  name,
+  email,
+  password,
+  passwordConfirmation
+);
+  navigate(`/verify-otp?email=${encodeURIComponent(email)}`);
+}
   } catch (err: unknown) {
     if (err instanceof Error) {
       const status = (err as Error & { status?: number }).status;
@@ -72,26 +83,54 @@ const handleSubmit = async (e: React.FormEvent) => {
             <div>
               <label className="block text-sm font-semibold text-slate-600 mb-2">Nama Lengkap</label>
               <input 
-                type="text" value={name} onChange={(e) => setName(e.target.value)} required 
+                type="text" value={name} onChange={(e) => setName(e.target.value)} required placeholder="Masukan Nama" 
                 className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 outline-none focus:border-blue-500" 
               />
             </div>
+
+            
           )}
           
           <div>
             <label className="block text-sm font-semibold text-slate-600 mb-2">Email</label>
             <input 
-              type="email" value={email} onChange={(e) => setEmail(e.target.value)} required 
+              type="email" value={email} onChange={(e) => setEmail(e.target.value)} required placeholder="Masukan Email"
               className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 outline-none focus:border-blue-500" 
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-semibold text-slate-600 mb-2">Password</label>
-            <input 
-              type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6}
-              className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 outline-none focus:border-blue-500" 
-            />
+<div>
+  <label className="block text-sm font-semibold text-slate-600 mb-2">
+    Password
+  </label>
+
+  <input
+    type="password"
+    value={password}
+    onChange={(e) => setPassword(e.target.value)}
+    required
+    minLength={6}
+    placeholder="Masukan password"
+    className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 outline-none focus:border-blue-500"
+  />
+</div>
+
+{!isLoginMode && (
+  <div>
+    <label className="block text-sm font-semibold text-slate-600 mb-2">
+      Konfirmasi Password
+    </label>
+
+    <input
+      type="password"
+      value={passwordConfirmation}
+      onChange={(e) => setPasswordConfirmation(e.target.value)}
+      placeholder="Ulangi password"
+      required
+      className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 outline-none focus:border-blue-500"
+    />
+  </div>
+)}
 
 <div className="flex justify-end -mt-2">
   {isLoginMode && (
@@ -105,14 +144,15 @@ const handleSubmit = async (e: React.FormEvent) => {
   )}
 </div>
 
-          </div>
-
-          <button 
-            type="submit" disabled={isLoading}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl transition-colors shadow-sm disabled:opacity-70 mt-4"
-          >
-            {isLoading ? 'Memproses...' : (isLoginMode ? 'Masuk' : 'Daftar Sekarang')}
-          </button>
+<button
+  type="submit"
+  disabled={isLoading}
+  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl transition-colors shadow-sm disabled:opacity-70 mt-4"
+>
+  {isLoading
+    ? 'Memproses...'
+    : (isLoginMode ? 'Masuk' : 'Daftar Sekarang')}
+</button>
         </form>
 
         {/* --- MULAI BAGIAN GOOGLE LOGIN --- */}
