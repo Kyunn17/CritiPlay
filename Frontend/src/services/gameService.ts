@@ -24,11 +24,65 @@ export const gameService = {
     return response.json();
   },
 
-  searchGames: async (query: string): Promise<Game[]> => {
-    console.log('Searching game:', query);
+  getGameByIgdbId: async (id: string): Promise<Game | undefined> => {
+  const response = await fetch(`${API_URL}/search?q=${encodeURIComponent(id)}`, {
+    headers: getHeaders()
+  });
 
-    return [];
-  },
+  if (!response.ok) return undefined;
+
+  const data: {
+    igdb_id: number;
+    name: string;
+    cover_url: string | null;
+    release_year: string;
+    genres: string[];
+    platforms: string[];
+  }[] = await response.json();
+
+  const game = data.find((game) => String(game.igdb_id) === id);
+
+  if (!game) return undefined;
+
+  return {
+    id: String(game.igdb_id),
+    title: game.name,
+    coverImage: game.cover_url ?? '',
+    developer: game.platforms.join(', '),
+    releaseDate: game.release_year,
+    genres: game.genres,
+  };
+},
+
+  searchGames: async (query: string): Promise<Game[]> => {
+    console.log('TOKEN:', authService.getToken());
+  const response = await fetch(
+    `${API_URL}/search?q=${encodeURIComponent(query)}`,
+    { headers: getHeaders() }
+  );
+
+  if (!response.ok) {
+    throw new Error('Gagal mencari game');
+  }
+
+  const data: {
+    igdb_id: number;
+    name: string;
+    cover_url: string | null;
+    release_year: string;
+    genres: string[];
+    platforms: string[];
+  }[] = await response.json();
+
+  return data.map((game) => ({
+    id: String(game.igdb_id),
+    title: game.name,
+    coverImage: game.cover_url ?? '',
+    developer: game.platforms.join(', '),
+    releaseDate: game.release_year,
+    genres: game.genres,
+  }));
+},
 
   addGame: async (newGameData: Omit<Game, 'id'>): Promise<Game> => {
     const response = await fetch(API_URL, {
