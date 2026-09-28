@@ -6,9 +6,10 @@ use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\SocialAuthController;
+use App\Http\Controllers\GameSearchController;
 
 Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login']);
+Route::post('/login', [AuthController::class, 'login'])->name('login');
 Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 
@@ -30,6 +31,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::delete('reviews/{id}', [ReviewController::class, 'destroy']);
 
     Route::middleware('admin')->prefix('admin')->group(function () {
-        Route::get('/users', [AdminController::class, 'getAllUsers']);
-    });
+    Route::get('/users', [AdminController::class, 'getAllUsers']);});
+
+    Route::get('/games/search', [GameSearchController::class, 'search']);
 });
