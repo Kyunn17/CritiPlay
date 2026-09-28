@@ -11,7 +11,7 @@ public function up(): void
     Schema::table('users', function (Blueprint $table) {
         $table->string('otp')->nullable();
         $table->timestamp('otp_expires_at')->nullable();
-        $table->timestamp('email_verified_at')->nullable();
+        //$table->timestamp('email_verified_at')->nullable();
     });
 }
 

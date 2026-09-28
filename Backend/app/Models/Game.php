@@ -9,15 +9,30 @@ class Game extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['user_id','title', 'cover_image', 'developer', 'release_date', 'genres'];
+    protected $fillable = [
+        'igdb_id',
+        'name',
+        'cover_url',
+        'release_year',
+        'genres',
+        'platforms',
+        'summary',
+    ];
 
-    // Casting otomatis dari/ke JSON
     protected $casts = [
-        'genres' => 'array',
+        'genres'    => 'array',
+        'platforms' => 'array',
     ];
 
     public function reviews()
     {
         return $this->hasMany(Review::class);
+    }
+
+    public function users()
+    {
+        return $this->belongsToMany(User::class, 'game_user')
+            ->withPivot('status')
+            ->withTimestamps();
     }
 }
