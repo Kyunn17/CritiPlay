@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { gameService } from '../services/gameService';
 import type { Game } from '../types';
-import AddGameModal from '../components/AddGameModal';
 
 // ==========================================
 // GAME CARD SKELETON
@@ -35,7 +34,6 @@ const GameCardSkeleton = () => {
 
 // ==========================================
 // GAME CARD
-// Nanti dipakai ketika data dari backend sudah ada
 // ==========================================
 const GameCard = ({ game }: { game: Game }) => {
   return (
@@ -81,15 +79,10 @@ const GameCard = ({ game }: { game: Game }) => {
 
 export default function GameList() {
   // ==========================================
-  // STATE LIBRARY LAMA
+  // STATE LIBRARY (DATA DEFAULT / HOME)
   // ==========================================
   const [games, setGames] = useState<Game[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isModalOpen, setIsModalOpen] = useState<boolean>(false);
-
-  // Filter library lama
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedGenre, setSelectedGenre] = useState('All');
 
   // ==========================================
   // STATE V4 SEARCH
@@ -98,60 +91,60 @@ export default function GameList() {
   const [searchResults, setSearchResults] = useState<Game[]>([]);
   const [isSearching, setIsSearching] = useState<boolean>(false);
 
-  // ==========================================
-  // AMBIL DATA LIBRARY
-  // FITUR LAMA
+// ==========================================
+  // AMBIL DATA & ACAK UNTUK TAMPILAN HOME
+  // (Menggunakan trik search random keyword)
   // ==========================================
   useEffect(() => {
-    const fetchGames = async () => {
+    const fetchDefaultGames = async () => {
       try {
-        const data = await gameService.getAllGames();
-        setGames(data);
+        // 1. Siapin daftar kata kunci game populer
+        const trendingKeywords = ['mario', 'final fantasy', 'resident evil', 'zelda', 'gta', 'pokemon', 'persona', 'dragon quest'];
+        
+        // 2. Pilih satu kata kunci secara acak
+        const randomKeyword = trendingKeywords[Math.floor(Math.random() * trendingKeywords.length)];
+        
+        // 3. Pura-pura nge-search pakai keyword itu ke IGDB lewat backend lu
+        const data = await gameService.searchGames(randomKeyword);
+        
+        // 4. Pastiin formatnya array, lalu acak urutannya
+        if (Array.isArray(data)) {
+          const shuffledGames = [...data].sort(() => 0.5 - Math.random());
+          setGames(shuffledGames.slice(0, 6)); // Ambil 6 game buat di beranda
+        } else {
+          setGames([]);
+        }
       } catch (error) {
-        console.error("Gagal mengambil data game:", error);
+        console.error("Gagal mengambil data default:", error);
       } finally {
         setIsLoading(false);
       }
     };
 
-    fetchGames();
+    fetchDefaultGames();
   }, []);
-
-  // ==========================================
-  // TAMBAH GAME MANUAL
-  // FITUR LAMA
-  // ==========================================
-  const handleAddGame = async (gameData: Omit<Game, 'id'>) => {
-    try {
-      const newGame = await gameService.addGame(gameData);
-      setGames([newGame, ...games]);
-      setIsModalOpen(false);
-    } catch (error) {
-      console.error("Gagal menambah game:", error);
-    }
-  };
-
+    
   // ==========================================
   // V4 SEARCH GAME
-  //
-  // SEKARANG MASIH KOSONG.
-  //
-  // NANTI TINGGAL ISI BAGIAN INI DENGAN
-  // gameService.searchGames(query)
   // ==========================================
-  const handleExternalSearch = () => {
+  const handleExternalSearch = async () => {
     const query = externalSearchQuery.trim();
 
     if (!query) {
+      setSearchResults([]); // Kosongkan hasil search kalau input dihapus
       return;
     }
 
-    // Untuk sekarang belum melakukan request.
-    //
-    // NANTI:
-    //
-    // const results = await gameService.searchGames(query);
-    // setSearchResults(results);
+    setIsSearching(true);
+
+    try {
+      const results = await gameService.searchGames(query);
+      setSearchResults(results);
+    } catch (error) {
+      console.error('Gagal mencari game:', error);
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   // ==========================================
@@ -165,28 +158,17 @@ export default function GameList() {
     }
   };
 
-  // ==========================================
-  // GENRE FILTER
-  // ==========================================
-  const allGenres = Array.from(
-    new Set(games.flatMap((game) => game.genres))
-  ).sort();
-
-  // ==========================================
-  // FILTER LIBRARY
-  // FITUR LAMA
-  // ==========================================
-  const filteredGames = games.filter((game) => {
-    const matchSearch = game.title
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
-
-    const matchGenre =
-      selectedGenre === 'All' ||
-      game.genres.includes(selectedGenre);
-
-    return matchSearch && matchGenre;
-  });
+  // Kalau lagi search pakai data pencarian, kalau kosong pakai data random (Home)
+  const displayGames = externalSearchQuery && searchResults.length > 0 
+    ? searchResults 
+    : games;
+    
+  const showSkeleton = isLoading || isSearching;
+  
+  // Tentukan judul section dinamis berdasarkan kondisi
+  const sectionTitle = (externalSearchQuery && searchResults.length > 0) 
+    ? `Hasil Pencarian: "${externalSearchQuery}"` 
+    : "🎮 Rekomendasi Game Hari Ini";
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -195,27 +177,17 @@ export default function GameList() {
           HEADER
           ========================================== */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-
         <h1 className="text-3xl font-bold text-slate-800">
           My Game Journal
         </h1>
 
         <div className="flex gap-3">
-
           <Link
             to="/stats"
             className="bg-white hover:bg-slate-50 text-slate-700 font-semibold py-2.5 px-5 rounded-xl border border-slate-200 transition-colors shadow-sm flex items-center gap-2"
           >
             <span>📊 Statistik</span>
           </Link>
-
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 px-5 rounded-xl transition-colors shadow-sm flex items-center gap-2"
-          >
-            <span>+ Tambah Game</span>
-          </button>
-
         </div>
       </div>
 
@@ -223,156 +195,60 @@ export default function GameList() {
           V4 SEARCH GAME
           ========================================== */}
       <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-8">
-
         <div className="flex flex-col sm:flex-row gap-3">
-
           <input
             type="text"
             placeholder="Cari game dari database..."
             value={externalSearchQuery}
-            onChange={(e) => setExternalSearchQuery(e.target.value)}
+            onChange={(e) => {
+              setExternalSearchQuery(e.target.value);
+              if (e.target.value === '') setSearchResults([]); 
+            }}
             onKeyDown={handleExternalSearchKeyDown}
             className="flex-1 border border-slate-200 rounded-xl p-3 bg-slate-50 text-slate-700 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
           />
 
           <button
             onClick={handleExternalSearch}
-            disabled={isSearching}
+            disabled={isSearching || isLoading}
             className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-300 text-white font-semibold py-3 px-6 rounded-xl transition-colors"
           >
             {isSearching ? 'Mencari...' : 'Cari Game'}
           </button>
-
         </div>
       </div>
 
       {/* ==========================================
-          V4 GAME CARDS
-          
-          SEKARANG:
-          Skeleton saja.
-
-          NANTI:
-          Kalau searchResults sudah berisi data,
-          bagian ini tinggal render GameCard.
+          V4 GAME CARDS 
           ========================================== */}
       <div className="mb-8">
-
         <h2 className="text-xl font-bold text-slate-800 mb-4">
-          Game Database
+          {sectionTitle}
         </h2>
 
-        {searchResults.length > 0 ? (
-
-          // ==========================================
-          // DATA DARI BACKEND
-          // NANTI AKAN MASUK SINI
-          // ==========================================
+        {showSkeleton ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {searchResults.map((game) => (
+            {Array.from({ length: 6 }).map((_, index) => (
+              <GameCardSkeleton key={index} />
+            ))}
+          </div>
+        ) : displayGames.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {displayGames.map((game) => (
               <GameCard
                 key={game.id}
                 game={game}
               />
             ))}
           </div>
-
         ) : (
-
-          // ==========================================
-          // SEMENTARA BELUM ADA DATA
-          // TAMPILKAN SKELETON TERUS
-          // ==========================================
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {Array.from({ length: 6 }).map((_, index) => (
-              <GameCardSkeleton key={index} />
-            ))}
+          <div className="bg-white p-12 rounded-3xl border border-slate-100 text-center text-slate-500 border-dashed border-2">
+            {externalSearchQuery 
+              ? `Tidak ada game dengan judul "${externalSearchQuery}"` 
+              : "Belum ada data game di database."}
           </div>
-
         )}
-
       </div>
-
-      {/* ==========================================
-          FILTER LIBRARY LAMA
-          ========================================== */}
-      <div className="flex flex-col md:flex-row gap-4 mb-8 bg-white p-4 rounded-2xl shadow-sm border border-slate-100">
-
-        <div className="flex-1">
-
-          <input
-            type="text"
-            placeholder="Cari judul game..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 text-slate-700 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-          />
-
-        </div>
-
-        <div className="md:w-1/3">
-
-          <select
-            value={selectedGenre}
-            onChange={(e) => setSelectedGenre(e.target.value)}
-            className="w-full border border-slate-200 rounded-xl p-3 bg-slate-50 text-slate-700 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-          >
-
-            <option value="All">
-              Semua Genre
-            </option>
-
-            {allGenres.map((genre) => (
-              <option key={genre} value={genre}>
-                {genre}
-              </option>
-            ))}
-
-          </select>
-
-        </div>
-      </div>
-
-      {/* ==========================================
-          LIBRARY GAME LAMA
-          ========================================== */}
-      {isLoading ? (
-
-        <div className="flex justify-center h-40 items-center">
-          <p className="text-slate-500 animate-pulse font-medium">
-            Memuat data...
-          </p>
-        </div>
-
-      ) : filteredGames.length === 0 ? (
-
-        <div className="bg-white p-12 rounded-3xl border border-slate-100 text-center text-slate-500 border-dashed border-2">
-          Tidak ada game yang cocok dengan pencarianmu.
-        </div>
-
-      ) : (
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-
-          {filteredGames.map((game) => (
-            <GameCard
-              key={game.id}
-              game={game}
-            />
-          ))}
-
-        </div>
-
-      )}
-
-      {/* ==========================================
-          ADD GAME MODAL
-          ========================================== */}
-      <AddGameModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onAddGame={handleAddGame}
-      />
 
     </div>
   );

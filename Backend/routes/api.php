@@ -24,6 +24,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/profile', [AuthController::class, 'profile']);
     Route::post('/profile', [AuthController::class, 'updateProfile']);
 
+    Route::get('/games/search', [GameSearchController::class, 'search']);
     Route::apiResource('games', GameController::class);
     Route::get('games/{game}/reviews', [ReviewController::class, 'getByGame']);
     Route::post('reviews', [ReviewController::class, 'store']);
@@ -33,5 +34,5 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('admin')->prefix('admin')->group(function () {
     Route::get('/users', [AdminController::class, 'getAllUsers']);});
 
-    Route::get('/games/search', [GameSearchController::class, 'search']);
+    
 });
