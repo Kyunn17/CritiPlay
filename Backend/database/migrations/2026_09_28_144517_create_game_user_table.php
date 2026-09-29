@@ -12,8 +12,9 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('game_id')->constrained()->onDelete('cascade');
-            $table->string('status')->default('backlog'); 
+            $table->string('status')->default('plan_to_play');
             $table->timestamps();
+            $table->unique(['user_id', 'game_id']);
         });
     }
 

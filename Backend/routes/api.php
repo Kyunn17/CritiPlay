@@ -8,6 +8,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\SocialAuthController;
 use App\Http\Controllers\GameSearchController;
 use App\Http\Controllers\GameImportController;
+use App\Http\Controllers\LibraryController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login'])->name('login');
@@ -40,4 +41,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('admin')->prefix('admin')->group(function () {
         Route::get('/users', [AdminController::class, 'getAllUsers']);
     });
+
+    Route::get('/library', [LibraryController::class, 'index']);
+    Route::post('/library', [LibraryController::class, 'addOrUpdate']);
+    Route::delete('/library/{gameId}', [LibraryController::class, 'remove']);
 });
