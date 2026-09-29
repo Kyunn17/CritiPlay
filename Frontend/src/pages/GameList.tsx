@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { gameService } from '../services/gameService';
-import type { Game } from '../types';
+import type { ExternalGame } from '../types';
 
 // ==========================================
 // GAME CARD SKELETON
@@ -35,21 +35,47 @@ const GameCardSkeleton = () => {
 // ==========================================
 // GAME CARD
 // ==========================================
-const GameCard = ({ game }: { game: Game }) => {
+const GameCard = ({ game }: { game: ExternalGame }) => {
+  const navigate = useNavigate();
+  const [isImporting, setIsImporting] = useState(false);
+
+  const handleClick = async () => {
+    if (isImporting) return;
+
+    try {
+      setIsImporting(true);
+
+      const importedGame = await gameService.importGame(game.igdb_id);
+
+sessionStorage.setItem(
+  `game-${importedGame.id}`,
+  JSON.stringify(importedGame)
+);
+
+navigate(`/game/${importedGame.id}`);
+    } catch (error) {
+      console.error('Gagal membuka game:', error);
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   return (
-    <Link
-      to={`/game/${game.id}`}
-      className="bg-white rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-200 overflow-hidden border border-slate-100 flex flex-col cursor-pointer"
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={isImporting}
+      className="bg-white rounded-2xl shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-200 overflow-hidden border border-slate-100 flex flex-col cursor-pointer text-left w-full disabled:opacity-70"
     >
       <img
-        src={game.coverImage}
-        alt={game.title}
+        src={game.cover_url ?? ''}
+        alt={game.name}
         className="w-full h-48 object-cover"
       />
 
       <div className="p-5 flex flex-col flex-grow">
         <h2 className="text-xl font-bold text-slate-800 mb-3 line-clamp-1">
-          {game.title}
+          {game.name}
         </h2>
 
         <div className="flex flex-wrap gap-2 mb-4">
@@ -65,30 +91,31 @@ const GameCard = ({ game }: { game: Game }) => {
 
         <div className="mt-auto pt-4 border-t border-slate-50 text-sm text-slate-500 flex justify-between items-center">
           <span className="font-medium">
-            {game.developer}
+            {game.platforms.join(', ')}
           </span>
 
           <span>
-            {new Date(game.releaseDate).getFullYear()}
+            {game.release_year ?? 'Unknown'}
           </span>
         </div>
       </div>
-    </Link>
+    </button>
   );
 };
+
 
 export default function GameList() {
   // ==========================================
   // STATE LIBRARY (DATA DEFAULT / HOME)
   // ==========================================
-  const [games, setGames] = useState<Game[]>([]);
+  const [games, setGames] = useState<ExternalGame[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
   // ==========================================
   // STATE V4 SEARCH
   // ==========================================
   const [externalSearchQuery, setExternalSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<Game[]>([]);
+  const [searchResults, setSearchResults] = useState<ExternalGame[]>([]);
   const [isSearching, setIsSearching] = useState<boolean>(false);
 
 // ==========================================
@@ -236,7 +263,7 @@ export default function GameList() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {displayGames.map((game) => (
               <GameCard
-                key={game.id}
+                key={game.igdb_id}
                 game={game}
               />
             ))}

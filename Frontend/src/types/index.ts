@@ -2,11 +2,22 @@ export type GameStatus = 'Playing' | 'Completed' | 'Dropped' | 'Plan to Play';
 
 export interface Game {
   id: string;
-  title: string;
-  coverImage: string;
-  developer: string;
-  releaseDate: string;
+  igdb_id: number;
+  name: string;
+  cover_url: string | null;
+  release_year: string | null;
   genres: string[];
+  platforms: string[];
+  summary: string | null;
+}
+
+export interface ExternalGame {
+  igdb_id: number;
+  name: string;
+  cover_url: string | null;
+  release_year: string | null;
+  genres: string[];
+  platforms: string[];
 }
 
 export interface RatingAspect {

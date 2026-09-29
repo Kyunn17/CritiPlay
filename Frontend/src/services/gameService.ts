@@ -1,4 +1,4 @@
-import type { Game } from '../types';
+import type { Game, ExternalGame } from '../types';
 import { authService } from './authService'; // Import authService
 
 const API_URL = 'http://127.0.0.1:8000/api/games';
@@ -19,43 +19,19 @@ export const gameService = {
   },
 
   getGameById: async (id: string): Promise<Game | undefined> => {
-    const response = await fetch(`${API_URL}/${id}`, { headers: getHeaders() });
-    if (!response.ok) return undefined;
-    return response.json();
-  },
-
-  getGameByIgdbId: async (id: string): Promise<Game | undefined> => {
-  const response = await fetch(`${API_URL}/search?q=${encodeURIComponent(id)}`, {
+  const response = await fetch(`${API_URL}/${id}`, {
     headers: getHeaders()
   });
 
   if (!response.ok) return undefined;
 
-  const data: {
-    igdb_id: number;
-    name: string;
-    cover_url: string | null;
-    release_year: string;
-    genres: string[];
-    platforms: string[];
-  }[] = await response.json();
-
-  const game = data.find((game) => String(game.igdb_id) === id);
-
-  if (!game) return undefined;
-
-  return {
-    id: String(game.igdb_id),
-    title: game.name,
-    coverImage: game.cover_url ?? '',
-    developer: game.platforms.join(', '),
-    releaseDate: game.release_year,
-    genres: game.genres,
-  };
+  return response.json();
 },
 
-  searchGames: async (query: string): Promise<Game[]> => {
-    console.log('TOKEN:', authService.getToken());
+
+ searchGames: async (query: string): Promise<ExternalGame[]> => {
+  console.log('TOKEN:', authService.getToken());
+
   const response = await fetch(
     `${API_URL}/search?q=${encodeURIComponent(query)}`,
     { headers: getHeaders() }
@@ -69,19 +45,46 @@ export const gameService = {
     igdb_id: number;
     name: string;
     cover_url: string | null;
-    release_year: string;
+    release_year: string | null;
     genres: string[];
     platforms: string[];
   }[] = await response.json();
 
   return data.map((game) => ({
-    id: String(game.igdb_id),
-    title: game.name,
-    coverImage: game.cover_url ?? '',
-    developer: game.platforms.join(', '),
-    releaseDate: game.release_year,
+    igdb_id: game.igdb_id,
+    name: game.name,
+    cover_url: game.cover_url,
+    release_year: game.release_year,
     genres: game.genres,
+    platforms: game.platforms,
   }));
+},
+
+importGame: async (igdbId: number): Promise<Game> => {
+  const response = await fetch(`${API_URL}/import`, {
+    method: 'POST',
+    headers: getHeaders(),
+    body: JSON.stringify({
+      igdb_id: igdbId,
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error('Gagal mengimport game');
+  }
+
+  const data = await response.json();
+
+  return {
+    id: String(data.game.id),
+    igdb_id: data.game.igdb_id,
+    name: data.game.name,
+    cover_url: data.game.cover_url,
+    release_year: data.game.release_year,
+    genres: data.game.genres ?? [],
+    platforms: data.game.platforms ?? [],
+    summary: data.game.summary ?? null,
+  };
 },
 
   addGame: async (newGameData: Omit<Game, 'id'>): Promise<Game> => {
