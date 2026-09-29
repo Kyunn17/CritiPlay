@@ -23,23 +23,43 @@ export default function GameDetail() {
   const [isEditGameModalOpen, setIsEditGameModalOpen] = useState<boolean>(false);
 
   useEffect(() => {
-    const fetchGameDetail = async () => {
-      if (!id) return; 
+  const fetchGameDetail = async () => {
+    if (!id) return;
+
+    try {
+      const savedGame = sessionStorage.getItem(`game-${id}`);
+
+if (savedGame) {
+  const parsedGame: Game = JSON.parse(savedGame);
+  setGame(parsedGame);
+} else {
+  const data = await gameService.getGameById(id);
+
+  if (!data) {
+    setIsError(true);
+    return;
+  }
+
+  setGame(data);
+}
       try {
-        const data = await gameService.getGameById(id);
-        if (data) {
-          setGame(data);
-          const reviewData = await reviewService.getReviewsByGameId(id);
-          setReviews(reviewData);
-        } else setIsError(true);
+        const reviewData = await reviewService.getReviewsByGameId(id);
+        setReviews(reviewData);
       } catch (error) {
-        setIsError(true);
-      } finally {
-        setIsLoading(false);
+        console.error('Gagal mengambil review:', error);
+        setReviews([]);
       }
-    };
-    fetchGameDetail();
-  }, [id]);
+
+    } catch (error) {
+      console.error('Gagal mengambil detail game:', error);
+      setIsError(true);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  fetchGameDetail();
+}, [id]);
 
   // === LOGIC GAME ===
   const handleUpdateGame = async (updatedData: Partial<Game>) => {
@@ -55,7 +75,7 @@ export default function GameDetail() {
 
   const handleDeleteGame = async () => {
     if (!game) return;
-    if (window.confirm(`Yakin ingin menghapus game "${game.title}"?`)) {
+    if (window.confirm(`Yakin ingin menghapus game "${game.name}"?`)) {
       await reviewService.deleteReviewsByGameId(game.id);
       await gameService.deleteGame(game.id);
       navigate('/');
@@ -130,15 +150,20 @@ export default function GameDetail() {
 
       <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden flex flex-col md:flex-row mb-8">
         <div className="md:w-1/3 bg-slate-50 p-6 flex justify-center items-start">
-          <img src={game.coverImage} alt={game.title} className="w-full max-w-sm rounded-xl shadow-md object-cover aspect-[3/4]" />
+          <img
+  src={game.cover_url ?? ''}
+  alt={game.name}
+  className="w-full max-w-sm rounded-xl shadow-md object-cover aspect-[3/4]"
+/>
         </div>
         <div className="md:w-2/3 p-8 md:p-10 flex flex-col justify-center">
           <div className="flex flex-wrap gap-2 mb-4">
             {game.genres.map((genre) => <span key={genre} className="px-3 py-1 bg-blue-50 text-blue-700 text-xs font-bold uppercase tracking-wider rounded-lg">{genre}</span>)}
           </div>
-          <h1 className="text-4xl font-extrabold text-slate-900 mb-2">{game.title}</h1>
-          <p className="text-lg text-slate-500 font-medium mb-8">{game.developer} &bull; {new Date(game.releaseDate).getFullYear()}</p>
-          
+          <h1 className="text-4xl font-extrabold text-slate-900 mb-2">{game.name}</h1>
+          <p className="text-lg text-slate-500 font-medium mb-8">
+  {game.platforms.join(', ')} &bull; {game.release_year ?? 'Unknown'}
+</p>
           <div className="mt-auto pt-8 border-t border-slate-100 flex gap-4">
             <button onClick={() => setIsReviewModalOpen(true)} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition-colors shadow-sm">
               + Tulis Jurnal
