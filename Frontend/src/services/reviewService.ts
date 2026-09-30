@@ -37,14 +37,14 @@ export const reviewService = {
   },
 
   deleteReview: async (id: string): Promise<boolean> => {
-    const response = await fetch(`${API_URL}/reviews/${id}`, { 
-      method: 'DELETE',
-      headers: getHeaders()
-    });
-    return response.ok;
-  },
+  const response = await fetch(`${API_URL}/reviews/${id}`, { 
+    method: 'DELETE',
+    headers: getHeaders()
+  });
+  return response.ok;
+},
 
-  deleteReviewsByGameId: async (_gameId: string): Promise<void> => {
-    return Promise.resolve();
-  }
+deleteReviewsByGameId: async (): Promise<void> => {
+  return Promise.resolve();
+}
 };

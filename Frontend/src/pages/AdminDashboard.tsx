@@ -1,8 +1,16 @@
 import { useState, useEffect } from 'react';
 import { adminService } from '../services/adminService';
 
+type AdminUser = {
+  id: number;
+  name: string;
+  email: string;
+  role: string;
+  games_count: number;
+};
+
 export default function AdminDashboard() {
-  const [users, setUsers] = useState<unknown[]>([]);
+  const [users, setUsers] = useState<AdminUser[]>([]);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
 

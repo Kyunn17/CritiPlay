@@ -98,13 +98,20 @@ const handleLibraryStatus = async (
           setReviews(reviews.map(r => r.id === updated.id ? updated : r));
         }
       } else {
-        // Mode TAMBAH BARU
-        const newReview: Review = {
-          id: `r${Date.now()}`, gameId: game.id, status, aspectRatings: aspects, overallRating: avgScore, content, dateAdded: new Date().toISOString()
-        };
-        await reviewService.saveReview(newReview);
-        setReviews([newReview, ...reviews]);
-      }
+  const newReview: Review = {
+    id: `r${Date.now()}`,
+    gameId: game.id,
+    status,
+    aspectRatings: aspects,
+    overallRating: avgScore,
+    content,
+    dateAdded: new Date().toISOString()
+  };
+
+  const savedReview = await reviewService.saveReview(newReview);
+
+  setReviews([savedReview, ...reviews]);
+}
     } catch (error) {
       console.error(error);
     }
@@ -239,12 +246,6 @@ const handleLibraryStatus = async (
         onSubmit={handleSubmitReview} 
         initialData={editingReview} 
       />
-      <ReviewFormModal 
-  isOpen={isReviewModalOpen} 
-  onClose={handleCloseReviewModal} 
-  onSubmit={handleSubmitReview} 
-  initialData={editingReview} 
-/>
     </div>
   );
 }
