@@ -42,6 +42,15 @@ export default function Navbar() {
           </>
         )}
         <div className="flex items-center gap-4">
+         
+
+          <Link
+  to="/library"
+  className="text-slate-600 hover:text-blue-600 font-medium text-sm transition-colors hidden sm:inline-block"
+>
+  Library
+</Link>
+ <span className="text-slate-300 hidden sm:inline-block">|</span>
             <Link to="/profile" className="text-slate-600 hover:text-blue-600 font-medium text-sm transition-colors hidden sm:inline-block">
                 Profil
             </Link>
@@ -49,6 +58,7 @@ export default function Navbar() {
             <span className="text-slate-600 font-medium hidden sm:inline-block">
                 Halo, <strong className="text-slate-800">{userName || 'Gamer'}</strong>!
             </span>
+            
 
           <button 
             onClick={handleLogout}
