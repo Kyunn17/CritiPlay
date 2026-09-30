@@ -11,12 +11,13 @@ return new class extends Migration
     {
         Schema::create('reviews', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('game_id')->constrained('games')->onDelete('cascade'); 
-            $table->string('status'); 
-            $table->json('aspect_ratings'); 
-            $table->decimal('overall_rating', 3, 1); 
-            $table->text('content'); 
-            $table->timestamps(); 
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->foreignId('game_id')->constrained('games')->onDelete('cascade');
+            $table->string('status');
+            $table->json('aspect_ratings');
+            $table->decimal('overall_rating', 3, 1);
+            $table->text('content');
+            $table->timestamps();
         });
     }
 

@@ -43,4 +43,9 @@ class User extends Authenticatable
     {
         return $this->belongsToMany(Game::class, 'game_user')->withPivot('status')->withTimestamps();
     }
+
+    public function reviews()
+    {
+        return $this->hasMany(Review::class);
+    }
 }
