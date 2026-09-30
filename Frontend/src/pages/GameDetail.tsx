@@ -1,27 +1,27 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { gameService } from '../services/gameService';
 import { reviewService } from '../services/reviewService';
 import type { Game, Review, GameStatus, RatingAspect } from '../types';
 import ReviewCard from '../components/ReviewCard';
 import ReviewFormModal from '../components/ReviewFormModal';
-// 1. Import EditGameModal
-import EditGameModal from '../components/EditGameModal';
+import { libraryService } from '../services/libraryService';
+import type { LibraryStatus } from '../services/libraryService';
 
 export default function GameDetail() {
   const { id } = useParams();
-  const navigate = useNavigate();
   
   const [game, setGame] = useState<Game | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [isError, setIsError] = useState<boolean>(false);
+  const [libraryStatus, setLibraryStatus] = useState<LibraryStatus | null>(null);
+const [isUpdatingLibrary, setIsUpdatingLibrary] = useState(false);
   
   // States untuk Modals
   const [isReviewModalOpen, setIsReviewModalOpen] = useState<boolean>(false);
   const [editingReview, setEditingReview] = useState<Review | null>(null);
-  const [isEditGameModalOpen, setIsEditGameModalOpen] = useState<boolean>(false);
-
+  
   useEffect(() => {
   const fetchGameDetail = async () => {
     if (!id) return;
@@ -61,26 +61,24 @@ if (savedGame) {
   fetchGameDetail();
 }, [id]);
 
-  // === LOGIC GAME ===
-  const handleUpdateGame = async (updatedData: Partial<Game>) => {
-    if (!game) return;
-    try {
-      const updated = await gameService.updateGame(game.id, updatedData);
-      if (updated) setGame(updated);
-      setIsEditGameModalOpen(false);
-    } catch (error) {
-      console.error(error);
-    }
-  };
 
-  const handleDeleteGame = async () => {
-    if (!game) return;
-    if (window.confirm(`Yakin ingin menghapus game "${game.name}"?`)) {
-      await reviewService.deleteReviewsByGameId(game.id);
-      await gameService.deleteGame(game.id);
-      navigate('/');
-    }
-  };
+const handleLibraryStatus = async (
+  status: Exclude<LibraryStatus, 'all'>
+) => {
+  if (!game || isUpdatingLibrary) return;
+
+  try {
+    setIsUpdatingLibrary(true);
+
+    await libraryService.updateStatus(game.id, status);
+
+    setLibraryStatus(status);
+  } catch (error) {
+    console.error('Gagal mengubah status Library:', error);
+  } finally {
+    setIsUpdatingLibrary(false);
+  }
+};  
 
   // === LOGIC REVIEW ===
   const handleSubmitReview = async (status: GameStatus, aspects: RatingAspect[], content: string) => {
@@ -137,15 +135,6 @@ if (savedGame) {
       <div className="flex justify-between items-center mb-6">
         <Link to="/" className="text-slate-500 hover:text-blue-600 hover:underline font-medium">&larr; Kembali</Link>
         
-        <div className="flex gap-2">
-          {/* Tombol Edit Game */}
-          <button onClick={() => setIsEditGameModalOpen(true)} className="text-slate-500 hover:bg-slate-100 px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
-            Edit Game
-          </button>
-          <button onClick={handleDeleteGame} className="text-red-500 hover:bg-red-50 px-4 py-2 rounded-lg text-sm font-semibold transition-colors">
-            Hapus Game
-          </button>
-        </div>
       </div>
 
       <div className="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden flex flex-col md:flex-row mb-8">
@@ -164,11 +153,71 @@ if (savedGame) {
           <p className="text-lg text-slate-500 font-medium mb-8">
   {game.platforms.join(', ')} &bull; {game.release_year ?? 'Unknown'}
 </p>
-          <div className="mt-auto pt-8 border-t border-slate-100 flex gap-4">
-            <button onClick={() => setIsReviewModalOpen(true)} className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition-colors shadow-sm">
-              + Tulis Jurnal
-            </button>
-          </div>
+          <div className="mt-auto pt-8 border-t border-slate-100">
+
+  <p className="text-sm font-semibold text-slate-500 mb-3">
+    Status Library
+  </p>
+
+  <div className="grid grid-cols-2 gap-2 mb-4">
+    <button
+      onClick={() => handleLibraryStatus('plan_to_play')}
+      disabled={isUpdatingLibrary}
+      className={`py-2.5 px-3 rounded-xl text-sm font-semibold transition-colors ${
+        libraryStatus === 'plan_to_play'
+          ? 'bg-yellow-500 text-white'
+          : 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100'
+      }`}
+    >
+      Plan to Play
+    </button>
+
+    <button
+      onClick={() => handleLibraryStatus('playing')}
+      disabled={isUpdatingLibrary}
+      className={`py-2.5 px-3 rounded-xl text-sm font-semibold transition-colors ${
+        libraryStatus === 'playing'
+          ? 'bg-blue-600 text-white'
+          : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+      }`}
+    >
+      Playing
+    </button>
+
+    <button
+      onClick={() => handleLibraryStatus('completed')}
+      disabled={isUpdatingLibrary}
+      className={`py-2.5 px-3 rounded-xl text-sm font-semibold transition-colors ${
+        libraryStatus === 'completed'
+          ? 'bg-green-600 text-white'
+          : 'bg-green-50 text-green-700 hover:bg-green-100'
+      }`}
+    >
+      Completed
+    </button>
+
+    <button
+      onClick={() => handleLibraryStatus('dropped')}
+      disabled={isUpdatingLibrary}
+      className={`py-2.5 px-3 rounded-xl text-sm font-semibold transition-colors ${
+        libraryStatus === 'dropped'
+          ? 'bg-red-600 text-white'
+          : 'bg-red-50 text-red-700 hover:bg-red-100'
+      }`}
+    >
+      Dropped
+    </button>
+  </div>
+
+  <button
+    onClick={() => setIsReviewModalOpen(true)}
+    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-6 rounded-xl transition-colors shadow-sm"
+  >
+    + Tulis Jurnal
+  </button>
+
+</div>
+
         </div>
       </div>
 
@@ -190,12 +239,12 @@ if (savedGame) {
         onSubmit={handleSubmitReview} 
         initialData={editingReview} 
       />
-      <EditGameModal 
-        isOpen={isEditGameModalOpen} 
-        onClose={() => setIsEditGameModalOpen(false)} 
-        game={game} 
-        onUpdate={handleUpdateGame} 
-      />
+      <ReviewFormModal 
+  isOpen={isReviewModalOpen} 
+  onClose={handleCloseReviewModal} 
+  onSubmit={handleSubmitReview} 
+  initialData={editingReview} 
+/>
     </div>
   );
 }
