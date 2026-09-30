@@ -12,7 +12,7 @@ export default function Navbar() {
       try {
         const user = await authService.getProfile();
         if (user) {
-          setUserName(user.name);
+          setUserName(user.user.name);
           setUserRole(user.role); 
         }
       } catch (error) {

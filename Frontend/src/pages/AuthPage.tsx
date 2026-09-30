@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { authService } from '../services/authService';
 
@@ -14,12 +14,10 @@ export default function AuthPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
 
-  // Menangkap error jika user batal login dari layar Google
-  useEffect(() => {
-    if (searchParams.get('error') === 'google_failed') {
-      setError('Login dengan Google dibatalkan atau gagal.');
-    }
-  }, [searchParams]);
+const googleError =
+  searchParams.get('error') === 'google_failed'
+    ? 'Login dengan Google dibatalkan atau gagal.'
+    : '';
 
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
@@ -72,12 +70,11 @@ const handleSubmit = async (e: React.FormEvent) => {
           </p>
         </div>
 
-        {error && (
-          <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm font-semibold mb-6">
-            {error}
-          </div>
-        )}
-
+        {(error || googleError) && (
+  <div className="bg-red-50 text-red-600 p-4 rounded-xl text-sm font-semibold mb-6">
+    {error || googleError}
+  </div>
+)}
         <form onSubmit={handleSubmit} className="space-y-5">
           {!isLoginMode && (
             <div>
