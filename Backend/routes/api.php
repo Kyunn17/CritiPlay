@@ -29,6 +29,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // --- TARUH RUTE KUSTOM GAMES DI SINI (DI ATAS RESOURCE) ---
     Route::get('/games/search', [GameSearchController::class, 'search']);
     Route::post('/games/import', [GameImportController::class, 'import']);
+    Route::get('/games/top-rated', [GameController::class, 'topRated']);
 
     // --- RESOURCE DI BAWAH KARENA PUNYA PARAMETER DINAMIS {game} ---
     Route::apiResource('games', GameController::class);

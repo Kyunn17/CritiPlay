@@ -18,6 +18,11 @@ return new class extends Migration
             $table->json('genres')->nullable(); 
             $table->json('platforms')->nullable(); 
             $table->text('summary')->nullable();
+            $table->decimal('avg_gameplay')->default(0);
+            $table->decimal('avg_story')->default(0);
+            $table->decimal('avg_visual')->default(0);
+            $table->decimal('avg_overall')->default(0);
+            $table->integer('total_reviews')->default(0);
             $table->timestamps();
         });
     }

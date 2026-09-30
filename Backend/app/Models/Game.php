@@ -17,6 +17,11 @@ class Game extends Model
         'genres',
         'platforms',
         'summary',
+        'avg_gameplay', 
+        'avg_story', 
+        'avg_visual', 
+        'avg_overall', 
+        'total_reviews'
     ];
 
     protected $casts = [

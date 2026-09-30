@@ -7,85 +7,100 @@ use Illuminate\Http\Request;
 
 class GameController extends Controller
 {
-    // Hanya ambil data milik user login
+    // Daftar semua game (data global, bukan milik user tertentu)
     public function index(Request $request)
     {
-        $games = Game::where('user_id', $request->user()->id)
-            ->orderBy('created_at', 'desc')
+        $games = Game::orderBy('created_at', 'desc')
             ->get()
-            ->map(function($game) {
-                return [
-                    'id' => (string) $game->id,
-                    'title' => $game->title,
-                    'coverImage' => $game->cover_image,
-                    'developer' => $game->developer,
-                    'releaseDate' => $game->release_date,
-                    'genres' => $game->genres,
-                ];
-            });
-            
+            ->map(fn ($game) => $this->formatGame($game));
+
         return response()->json($games);
     }
 
-    // Create
-    public function store(Request $request)
+    // Detail satu game
+    public function show($id)
     {
-        $game = Game::create([
-            'user_id' => $request->user()->id, 
-            'title' => $request->title,
-            'cover_image' => $request->coverImage,
-            'developer' => $request->developer,
-            'release_date' => $request->releaseDate,
-            'genres' => $request->genres,
-        ]);
+        $game = Game::find($id);
 
-        return response()->json(['message' => 'Game created', 'id' => (string) $game->id], 201);
+        if (!$game) {
+            return response()->json(['message' => 'Game tidak ditemukan.'], 404);
+        }
+
+        return response()->json($this->formatGame($game));
     }
 
-    // Read (pastikan data yag dicari adalah milik user)
-    public function show(Request $request, $id)
-    {
-        $game = Game::where('id', $id)->where('user_id', $request->user()->id)->first();
-
-        if (!$game) return response()->json(['message' => 'Not found or unauthorized'], 404);
-        return response()->json([
-            'id' => (string) $game->id,
-            'title' => $game->title,
-            'coverImage' => $game->cover_image,
-            'developer' => $game->developer,
-            'releaseDate' => $game->release_date,
-            'genres' => $game->genres,
-        ]);
-    }
-
-    // Update
+    // Update (misalnya perbaikan data manual, opsional)
     public function update(Request $request, $id)
     {
-        $game = Game::where('id', $id)->where('user_id', $request->user()->id)->first();
-        
-        if (!$game) return response()->json(['message' => 'Not found or unauthorized'], 404);
+        $game = Game::find($id);
+
+        if (!$game) {
+            return response()->json(['message' => 'Game tidak ditemukan.'], 404);
+        }
 
         $game->update([
-            'title' => $request->title ?? $game->title,
-            'cover_image' => $request->coverImage ?? $game->cover_image,
-            'developer' => $request->developer ?? $game->developer,
-            'release_date' => $request->releaseDate ?? $game->release_date,
-            'genres' => $request->genres ?? $game->genres,
+            'name'         => $request->name ?? $game->name,
+            'cover_url'    => $request->cover_url ?? $game->cover_url,
+            'release_year' => $request->release_year ?? $game->release_year,
+            'genres'       => $request->genres ?? $game->genres,
+            'platforms'    => $request->platforms ?? $game->platforms,
+            'summary'      => $request->summary ?? $game->summary,
         ]);
 
-        return response()->json(['message' => 'Game updated']);
+        return response()->json(['message' => 'Game updated', 'game' => $this->formatGame($game)]);
     }
 
     // Delete
-    public function destroy(Request $request, $id)
+    public function destroy($id)
     {
-        $game = Game::where('id', $id)->where('user_id', $request->user()->id)->first();
-        
-        if ($game) {
-            $game->delete();
-            return response()->json(['message' => 'Deleted']);
+        $game = Game::find($id);
+
+        if (!$game) {
+            return response()->json(['message' => 'Game tidak ditemukan.'], 404);
         }
-        
-        return response()->json(['message' => 'Not found or unauthorized'], 404);
+
+        $game->delete();
+
+        return response()->json(['message' => 'Deleted']);
+    }
+
+    // Top rated (fitur "Gameplay Terbaik" dkk yang kita rencanain)
+    public function topRated(Request $request)
+    {
+        $type = $request->query('type', 'overall');
+
+        $column = match ($type) {
+            'gameplay' => 'avg_gameplay',
+            'story'    => 'avg_story',
+            'visual'   => 'avg_visual',
+            default    => 'avg_overall',
+        };
+
+        $games = Game::where('total_reviews', '>', 0)
+            ->orderByDesc($column)
+            ->limit(10)
+            ->get()
+            ->map(fn ($game) => $this->formatGame($game));
+
+        return response()->json($games);
+    }
+
+    private function formatGame(Game $game): array
+    {
+        return [
+            'id'           => (string) $game->id,
+            'igdbId'       => $game->igdb_id,
+            'name'         => $game->name,
+            'coverUrl'     => $game->cover_url,
+            'releaseYear'  => $game->release_year,
+            'genres'       => $game->genres,
+            'platforms'    => $game->platforms,
+            'summary'      => $game->summary,
+            'avgGameplay'  => $game->avg_gameplay,
+            'avgStory'     => $game->avg_story,
+            'avgVisual'    => $game->avg_visual,
+            'avgOverall'   => $game->avg_overall,
+            'totalReviews' => $game->total_reviews,
+        ];
     }
 }

@@ -9,15 +9,23 @@ class Review extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['game_id', 'status', 'aspect_ratings', 'overall_rating', 'content'];
-
-    protected $casts = [
-        'aspect_ratings' => 'array',
-        'overall_rating' => 'float',
+    protected $fillable = [
+        'user_id',
+        'game_id',
+        'rating_gameplay',
+        'rating_story',
+        'rating_visual',
+        'rating_overall',
+        'review_text',
     ];
 
     public function game()
     {
         return $this->belongsTo(Game::class);
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
     }
 }
