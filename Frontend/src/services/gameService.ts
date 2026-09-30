@@ -1,6 +1,22 @@
 import type { Game, ExternalGame } from '../types';
 import { authService } from './authService'; // Import authService
 
+interface TopRatedGameResponse {
+  id: string | number;
+  igdbId: number;
+  name: string;
+  coverUrl: string | null;
+  releaseYear: string | null;
+  genres: string[];
+  platforms: string[];
+  summary: string | null;
+  avgGameplay: number;
+  avgStory: number;
+  avgVisual: number;
+  avgOverall: number;
+  totalReviews: number;
+}
+
 const API_URL = 'http://127.0.0.1:8000/api/games';
 
 // Fungsi untuk menyelipkan Token di setiap request
@@ -76,15 +92,21 @@ importGame: async (igdbId: number): Promise<Game> => {
   const data = await response.json();
 
   return {
-    id: String(data.game.id),
-    igdb_id: data.game.igdb_id,
-    name: data.game.name,
-    cover_url: data.game.cover_url,
-    release_year: data.game.release_year,
-    genres: data.game.genres ?? [],
-    platforms: data.game.platforms ?? [],
-    summary: data.game.summary ?? null,
-  };
+  id: String(data.game.id),
+  igdb_id: data.game.igdb_id,
+  name: data.game.name,
+  cover_url: data.game.cover_url,
+  release_year: data.game.release_year,
+  genres: data.game.genres ?? [],
+  platforms: data.game.platforms ?? [],
+  summary: data.game.summary ?? null,
+
+  avgGameplay: Number(data.game.avgGameplay ?? 0),
+  avgStory: Number(data.game.avgStory ?? 0),
+  avgVisual: Number(data.game.avgVisual ?? 0),
+  avgOverall: Number(data.game.avgOverall ?? 0),
+  totalReviews: Number(data.game.totalReviews ?? 0),
+};
 },
 
   addGame: async (newGameData: Omit<Game, 'id'>): Promise<Game> => {
@@ -113,5 +135,38 @@ importGame: async (igdbId: number): Promise<Game> => {
       headers: getHeaders()
     });
     return response.ok;
+  },
+
+  getTopRatedGames: async (
+  type: 'overall' | 'gameplay' | 'story' | 'visual'
+): Promise<Game[]> => {
+  const response = await fetch(
+    `${API_URL}/top-rated?type=${type}`,
+    {
+      headers: getHeaders()
+    }
+  );
+
+  if (!response.ok) {
+    return [];
   }
+
+  const data: TopRatedGameResponse[] = await response.json();
+
+  return data.map((game) => ({
+    id: String(game.id),
+    igdb_id: game.igdbId,
+    name: game.name,
+    cover_url: game.coverUrl,
+    release_year: game.releaseYear,
+    genres: game.genres ?? [],
+    platforms: game.platforms ?? [],
+    summary: game.summary ?? null,
+    avgGameplay: Number(game.avgGameplay ?? 0),
+    avgStory: Number(game.avgStory ?? 0),
+    avgVisual: Number(game.avgVisual ?? 0),
+    avgOverall: Number(game.avgOverall ?? 0),
+    totalReviews: Number(game.totalReviews ?? 0)
+  }));
+},
 };
