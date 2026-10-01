@@ -1,20 +1,38 @@
 import type { Game, ExternalGame } from '../types';
 import { authService } from './authService'; // Import authService
 
-interface TopRatedGameResponse {
+// ==========================================
+// BENTUK DATA MENTAH DARI BACKEND
+// Backend mengirim field dengan gaya berbeda-beda
+// (snake_case di import/search, camelCase di top-rated),
+// jadi dua-duanya diterima di sini.
+// ==========================================
+interface RawGame {
   id: string | number;
-  igdbId: number;
+  igdb_id?: number | null;
+  igdbId?: number | null;
   name: string;
-  coverUrl: string | null;
-  releaseYear: string | null;
+  cover_url?: string | null;
+  coverUrl?: string | null;
+  release_year?: string | null;
+  releaseYear?: string | null;
+  genres?: string[] | null;
+  platforms?: string[] | null;
+  summary?: string | null;
+  avgGameplay?: number | string | null;
+  avgStory?: number | string | null;
+  avgVisual?: number | string | null;
+  avgOverall?: number | string | null;
+  totalReviews?: number | string | null;
+}
+
+interface RawExternalGame {
+  igdb_id: number;
+  name: string;
+  cover_url: string | null;
+  release_year: string | null;
   genres: string[];
   platforms: string[];
-  summary: string | null;
-  avgGameplay: number;
-  avgStory: number;
-  avgVisual: number;
-  avgOverall: number;
-  totalReviews: number;
 }
 
 const API_URL = 'http://127.0.0.1:8000/api/games';
@@ -26,88 +44,154 @@ const getHeaders = () => ({
   'Authorization': `Bearer ${authService.getToken()}`
 });
 
-export const gameService = {
-  getAllGames: async (): Promise<Game[]> => {
-    const response = await fetch(API_URL, { headers: getHeaders() });
-    // Jika token tidak valid / ditolak, kembalikan array kosong agar React tidak crash
-    if (!response.ok) return []; 
-    return response.json();
-  },
+// ==========================================
+// MAPPER: data mentah backend -> Game
+// Dipakai di semua fungsi supaya bentuk data selalu sama
+// (cover_url, genres, platforms, rating selalu ada).
+// ==========================================
+const toNumber = (value: number | string | null | undefined): number =>
+  Number(value ?? 0);
 
-  getGameById: async (id: string): Promise<Game | undefined> => {
+const mapGame = (raw: RawGame): Game => ({
+  id: String(raw.id),
+  igdb_id: Number(raw.igdb_id ?? raw.igdbId ?? 0),
+  name: raw.name,
+  cover_url: raw.cover_url ?? raw.coverUrl ?? null,
+  release_year: raw.release_year ?? raw.releaseYear ?? null,
+  genres: raw.genres ?? [],
+  platforms: raw.platforms ?? [],
+  summary: raw.summary ?? null,
+  avgGameplay: toNumber(raw.avgGameplay),
+  avgStory: toNumber(raw.avgStory),
+  avgVisual: toNumber(raw.avgVisual),
+  avgOverall: toNumber(raw.avgOverall),
+  totalReviews: toNumber(raw.totalReviews)
+});
+
+// Response bisa berupa { game: {...} } atau langsung {...}
+const unwrapGame = (data: RawGame | { game: RawGame }): RawGame =>
+  'game' in data ? data.game : data;
+
+// ==========================================
+// AMBIL GAME DARI DATABASE BERDASARKAN ID
+// ==========================================
+const getGameById = async (id: string): Promise<Game | undefined> => {
   const response = await fetch(`${API_URL}/${id}`, {
     headers: getHeaders()
   });
 
   if (!response.ok) return undefined;
 
-  return response.json();
-},
-
-
- searchGames: async (query: string): Promise<ExternalGame[]> => {
-  console.log('TOKEN:', authService.getToken());
-
-  const response = await fetch(
-    `${API_URL}/search?q=${encodeURIComponent(query)}`,
-    { headers: getHeaders() }
-  );
-
-  if (!response.ok) {
-    throw new Error('Gagal mencari game');
-  }
-
-  const data: {
-    igdb_id: number;
-    name: string;
-    cover_url: string | null;
-    release_year: string | null;
-    genres: string[];
-    platforms: string[];
-  }[] = await response.json();
-
-  return data.map((game) => ({
-    igdb_id: game.igdb_id,
-    name: game.name,
-    cover_url: game.cover_url,
-    release_year: game.release_year,
-    genres: game.genres,
-    platforms: game.platforms,
-  }));
-},
-
-importGame: async (igdbId: number): Promise<Game> => {
-  const response = await fetch(`${API_URL}/import`, {
-    method: 'POST',
-    headers: getHeaders(),
-    body: JSON.stringify({
-      igdb_id: igdbId,
-    }),
-  });
-
-  if (!response.ok) {
-    throw new Error('Gagal mengimport game');
-  }
-
-  const data = await response.json();
-
-  return {
-  id: String(data.game.id),
-  igdb_id: data.game.igdb_id,
-  name: data.game.name,
-  cover_url: data.game.cover_url,
-  release_year: data.game.release_year,
-  genres: data.game.genres ?? [],
-  platforms: data.game.platforms ?? [],
-  summary: data.game.summary ?? null,
-
-  avgGameplay: Number(data.game.avgGameplay ?? 0),
-  avgStory: Number(data.game.avgStory ?? 0),
-  avgVisual: Number(data.game.avgVisual ?? 0),
-  avgOverall: Number(data.game.avgOverall ?? 0),
-  totalReviews: Number(data.game.totalReviews ?? 0),
+  return mapGame(unwrapGame(await response.json()));
 };
-},
+
+// ==========================================
+// PETA igdb_id -> id database
+// Dipakai untuk mengenali hasil search yang sudah ada di database.
+// Kalau gagal, return Map kosong (search tetap jalan seperti biasa).
+// ==========================================
+const fetchDatabaseIdsByIgdbId = async (): Promise<Map<number, string>> => {
+  const idMap = new Map<number, string>();
+
+  try {
+    const response = await fetch(API_URL, { headers: getHeaders() });
+
+    if (!response.ok) return idMap;
+
+    const raw: RawGame[] | { data?: RawGame[] } = await response.json();
+    const list = Array.isArray(raw) ? raw : raw.data ?? [];
+
+    list.forEach((item) => {
+      const igdbId = Number(item.igdb_id ?? item.igdbId ?? 0);
+
+      if (igdbId > 0) {
+        idMap.set(igdbId, String(item.id));
+      }
+    });
+  } catch (error) {
+    console.error('Gagal mengambil daftar game database:', error);
+  }
+
+  return idMap;
+};
+
+export const gameService = {
+  getAllGames: async (): Promise<Game[]> => {
+    const response = await fetch(API_URL, { headers: getHeaders() });
+    // Jika token tidak valid / ditolak, kembalikan array kosong agar React tidak crash
+    if (!response.ok) return [];
+    return response.json();
+  },
+
+  getGameById,
+
+  // ==========================================
+  // SEARCH
+  // Hasil dari IGDB dicocokkan dengan database lewat igdb_id.
+  // Kalau game sudah ada di database, yang dikembalikan adalah
+  // data Game lengkap (id + rating + total review).
+  // Kalau belum, yang dikembalikan tetap ExternalGame biasa.
+  // ==========================================
+  searchGames: async (query: string): Promise<(ExternalGame | Game)[]> => {
+    const response = await fetch(
+      `${API_URL}/search?q=${encodeURIComponent(query)}`,
+      { headers: getHeaders() }
+    );
+
+    if (!response.ok) {
+      throw new Error('Gagal mencari game');
+    }
+
+    const data: RawExternalGame[] = await response.json();
+
+    const externalGames: ExternalGame[] = data.map((game) => ({
+      igdb_id: game.igdb_id,
+      name: game.name,
+      cover_url: game.cover_url,
+      release_year: game.release_year,
+      genres: game.genres,
+      platforms: game.platforms,
+    }));
+
+    const databaseIds = await fetchDatabaseIdsByIgdbId();
+
+    if (databaseIds.size === 0) {
+      return externalGames;
+    }
+
+    return Promise.all(
+      externalGames.map(async (externalGame) => {
+        const databaseId = databaseIds.get(externalGame.igdb_id);
+
+        // Belum ada di database -> tampilkan apa adanya
+        if (!databaseId) return externalGame;
+
+        try {
+          const databaseGame = await getGameById(databaseId);
+          return databaseGame ?? externalGame;
+        } catch (error) {
+          console.error('Gagal mengambil rating game:', error);
+          return externalGame;
+        }
+      })
+    );
+  },
+
+  importGame: async (igdbId: number): Promise<Game> => {
+    const response = await fetch(`${API_URL}/import`, {
+      method: 'POST',
+      headers: getHeaders(),
+      body: JSON.stringify({
+        igdb_id: igdbId,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Gagal mengimport game');
+    }
+
+    return mapGame(unwrapGame(await response.json()));
+  },
 
   addGame: async (newGameData: Omit<Game, 'id'>): Promise<Game> => {
     const response = await fetch(API_URL, {
@@ -116,7 +200,7 @@ importGame: async (igdbId: number): Promise<Game> => {
       body: JSON.stringify(newGameData)
     });
     const data = await response.json();
-    return { ...newGameData, id: data.id }; 
+    return { ...newGameData, id: data.id };
   },
 
   updateGame: async (id: string, updatedData: Partial<Game>): Promise<Game | undefined> => {
@@ -130,7 +214,7 @@ importGame: async (igdbId: number): Promise<Game> => {
   },
 
   deleteGame: async (id: string): Promise<boolean> => {
-    const response = await fetch(`${API_URL}/${id}`, { 
+    const response = await fetch(`${API_URL}/${id}`, {
       method: 'DELETE',
       headers: getHeaders()
     });
@@ -138,35 +222,21 @@ importGame: async (igdbId: number): Promise<Game> => {
   },
 
   getTopRatedGames: async (
-  type: 'overall' | 'gameplay' | 'story' | 'visual'
-): Promise<Game[]> => {
-  const response = await fetch(
-    `${API_URL}/top-rated?type=${type}`,
-    {
-      headers: getHeaders()
+    type: 'overall' | 'gameplay' | 'story' | 'visual'
+  ): Promise<Game[]> => {
+    const response = await fetch(
+      `${API_URL}/top-rated?type=${type}`,
+      {
+        headers: getHeaders()
+      }
+    );
+
+    if (!response.ok) {
+      return [];
     }
-  );
 
-  if (!response.ok) {
-    return [];
-  }
+    const data: RawGame[] = await response.json();
 
-  const data: TopRatedGameResponse[] = await response.json();
-
-  return data.map((game) => ({
-    id: String(game.id),
-    igdb_id: game.igdbId,
-    name: game.name,
-    cover_url: game.coverUrl,
-    release_year: game.releaseYear,
-    genres: game.genres ?? [],
-    platforms: game.platforms ?? [],
-    summary: game.summary ?? null,
-    avgGameplay: Number(game.avgGameplay ?? 0),
-    avgStory: Number(game.avgStory ?? 0),
-    avgVisual: Number(game.avgVisual ?? 0),
-    avgOverall: Number(game.avgOverall ?? 0),
-    totalReviews: Number(game.totalReviews ?? 0)
-  }));
-},
+    return data.map(mapGame);
+  },
 };

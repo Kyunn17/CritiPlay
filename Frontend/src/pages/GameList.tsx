@@ -3,9 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { gameService } from '../services/gameService';
 import type { ExternalGame, Game } from '../types';
 
-// ==========================================
 // GAME CARD SKELETON
-// ==========================================
 const GameCardSkeleton = () => {
   return (
     <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-slate-100 animate-pulse">
@@ -28,9 +26,7 @@ const GameCardSkeleton = () => {
   );
 };
 
-// ==========================================
 // GAME CARD
-// ==========================================
 const GameCard = ({
   game,
   showRating = false
@@ -41,8 +37,6 @@ const GameCard = ({
   const navigate = useNavigate();
   const [isImporting, setIsImporting] = useState(false);
 
-  // Game dari database punya id.
-  // ExternalGame dari IGDB tidak punya id database.
   const isDatabaseGame = 'id' in game;
 
   const handleClick = async () => {
@@ -51,8 +45,7 @@ const GameCard = ({
     try {
       setIsImporting(true);
 
-      // Kalau game sudah ada di database,
-      // langsung buka detail tanpa import ulang.
+      
       if (isDatabaseGame) {
         sessionStorage.setItem(
           `game-${game.id}`,
@@ -63,7 +56,7 @@ const GameCard = ({
         return;
       }
 
-      // Kalau hasil search IGDB, import dulu.
+      
       const importedGame = await gameService.importGame(game.igdb_id);
 
       sessionStorage.setItem(
@@ -155,28 +148,23 @@ const GameCard = ({
   );
 };
 
-// ==========================================
 // GAME LIST
-// ==========================================
 export default function GameList() {
-  // ==========================================
   // TOP RATED GAMES
-  // ==========================================
-  const [overallGames, setOverallGames] = useState<Game[]>([]);
+    const [overallGames, setOverallGames] = useState<Game[]>([]);
   const [gameplayGames, setGameplayGames] = useState<Game[]>([]);
   const [storyGames, setStoryGames] = useState<Game[]>([]);
   const [visualGames, setVisualGames] = useState<Game[]>([]);
 
   const [isLoading, setIsLoading] = useState(true);
 
-  // ==========================================
+  
   // SEARCH
-  // ==========================================
   // Teks yang sedang diketik di input
   const [searchInput, setSearchInput] = useState('');
   // Kata kunci yang benar-benar sudah dicari
   const [activeQuery, setActiveQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<ExternalGame[]>([]);
+  const [searchResults, setSearchResults] = useState<(ExternalGame | Game)[]>([]);
   const [isSearching, setIsSearching] = useState(false);
 
   // Mencegah hasil request lama menimpa hasil request terbaru
@@ -290,9 +278,7 @@ export default function GameList() {
     fetchTopRatedGames();
   }, []);
 
-  // ==========================================
   // RENDER TOP RATED SECTION
-  // ==========================================
   const renderRatingSection = (
     title: string,
     games: Game[]
@@ -320,15 +306,11 @@ export default function GameList() {
     );
   };
 
-  // ==========================================
-  // RENDER
-  // ==========================================
+    // RENDER
   return (
     <div className="max-w-6xl mx-auto">
 
-      {/* ==========================================
-          HEADER
-          ========================================== */}
+      {/* HEADER */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <h1 className="text-3xl font-bold text-slate-800">
           My Game Journal
@@ -344,9 +326,7 @@ export default function GameList() {
         </div>
       </div>
 
-      {/* ==========================================
-          SEARCH
-          ========================================== */}
+      {/* SEARCH*/}
       <div className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 mb-8">
         <div className="flex flex-col sm:flex-row gap-3">
           <input
@@ -369,9 +349,7 @@ export default function GameList() {
         </div>
       </div>
 
-      {/* ==========================================
-          CONTENT
-          ========================================== */}
+      {/* CONTENT */}
       {showSkeleton ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {Array.from({ length: 6 }).map((_, index) => (
@@ -380,9 +358,7 @@ export default function GameList() {
         </div>
       ) : isSearchMode ? (
 
-        /* ==========================================
-           SEARCH RESULT
-           ========================================== */
+        // SEARCH RESULT
         <section>
           <h2 className="text-2xl font-bold text-slate-800 mb-4">
             Hasil Pencarian: "{activeQuery}"
@@ -407,9 +383,7 @@ export default function GameList() {
 
       ) : (
 
-        /* ==========================================
-           HOME RATING SECTIONS
-           ========================================== */
+        // HOME RATING SELECTION
         <>
           {renderRatingSection(
             '🏆 Overall Terbaik',
