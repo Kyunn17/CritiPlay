@@ -43,3 +43,46 @@ export interface Review {
   reviewText: string | null;
   dateAdded: string;
 }
+
+export interface SearchUser {
+  id: string;
+  name: string;
+  avatar: string | null;
+}
+
+export interface PublicProfileGame {
+  id: number;
+  name: string;
+  cover_url: string | null;
+  release_year: string | null;
+  genres: string[];
+  platforms: string[];
+  pivot?: {
+    status: 'plan_to_play' | 'playing' | 'completed' | 'dropped';
+    created_at?: string;
+    updated_at?: string;
+  };
+}
+
+export interface PublicProfile {
+  user: {
+    id: number;
+    name: string;
+    avatar: string | null;
+    joined_at: string;
+  };
+
+  stats: {
+    library: {
+      total_games: number;
+      completed: number;
+      playing: number;
+      plan_to_play: number;
+      dropped: number;
+    };
+
+    total_reviews: number;
+  };
+
+  recent_activity: PublicProfileGame[];
+}

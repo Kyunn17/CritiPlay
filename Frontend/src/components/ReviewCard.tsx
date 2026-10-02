@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import type { Review } from '../types';
 
 interface ReviewCardProps {
@@ -11,38 +12,53 @@ export default function ReviewCard({
   onDelete,
   onEdit
 }: ReviewCardProps) {
+  const navigate = useNavigate();
+
+  const handleOpenProfile = () => {
+    navigate(`/profile/${review.userId}`);
+  };
+
   return (
     <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
       {/* User + Date */}
       <div className="flex justify-between items-start mb-5">
         <div>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold overflow-hidden">
-  {review.avatar ? (
-    <img
-      src={`http://127.0.0.1:8000/storage/${review.avatar}`}
-      alt={review.name}
-      className="w-full h-full object-cover"
-    />
-  ) : (
-    review.name?.charAt(0).toUpperCase() ?? 'U'
-  )}
-</div>
+            {/* User Profile */}
+            <button
+              type="button"
+              onClick={handleOpenProfile}
+              className="flex items-center gap-3 text-left group"
+            >
+              <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold overflow-hidden shrink-0">
+                {review.avatar ? (
+                  <img
+                    src={`http://127.0.0.1:8000/storage/${review.avatar}`}
+                    alt={review.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  review.name?.charAt(0).toUpperCase() ?? 'U'
+                )}
+              </div>
 
-<div>
-  <p className="font-bold text-slate-800">
-    {review.name}
-  </p>
-              <p className="text-sm text-slate-400">
-                {new Date(
-                  review.dateAdded
-                ).toLocaleDateString('id-ID', {
-                  day: 'numeric',
-                  month: 'long',
-                  year: 'numeric'
-                })}
-              </p>
-            </div>
+              <div>
+                <p className="font-bold text-slate-800 group-hover:text-blue-600 transition-colors">
+                  {review.name}
+                </p>
+
+                <p className="text-sm text-slate-400">
+                  {new Date(review.dateAdded).toLocaleDateString(
+                    'id-ID',
+                    {
+                      day: 'numeric',
+                      month: 'long',
+                      year: 'numeric'
+                    }
+                  )}
+                </p>
+              </div>
+            </button>
           </div>
 
           {/* Overall */}

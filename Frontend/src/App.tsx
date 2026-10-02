@@ -12,6 +12,7 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import VerifyOtp from './pages/VerifyOtp';
 import Library from './pages/Library';
+import PublicProfilePage from './pages/PublicProfilePage';
 
 // 2. Modifikasi ProtectedRoute untuk membungkus halaman dengan Navbar
 const ProtectedRoute = ({ children }: { children: React.ReactElement }) => {
@@ -47,6 +48,9 @@ export default function App() {
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/verify-otp" element={<VerifyOtp />} />
           <Route path="/library" element={<Library />} />
+          <Route path="/profile/:userId" element={<ProtectedRoute><PublicProfilePage /></ProtectedRoute>
+  }
+/>
         </Routes>
       </div>
     </BrowserRouter>
