@@ -9,6 +9,7 @@ use App\Http\Controllers\SocialAuthController;
 use App\Http\Controllers\GameSearchController;
 use App\Http\Controllers\GameImportController;
 use App\Http\Controllers\LibraryController;
+use App\Http\Controllers\UserController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login'])->name('login');
@@ -25,15 +26,14 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/profile', [AuthController::class, 'profile']);
     Route::post('/profile', [AuthController::class, 'updateProfile']);
+    Route::get('/users/search', [UserController::class, 'search']);
+    Route::get('/users/{id}/profile', [UserController::class, 'publicProfile']);
 
-    // --- TARUH RUTE KUSTOM GAMES DI SINI (DI ATAS RESOURCE) ---
     Route::get('/games/search', [GameSearchController::class, 'search']);
     Route::post('/games/import', [GameImportController::class, 'import']);
     Route::get('/games/top-rated', [GameController::class, 'topRated']);
 
-    // --- RESOURCE DI BAWAH KARENA PUNYA PARAMETER DINAMIS {game} ---
     Route::apiResource('games', GameController::class);
-    
     Route::get('games/{game}/reviews', [ReviewController::class, 'getByGame']);
     Route::post('reviews', [ReviewController::class, 'store']);
     Route::put('reviews/{id}', [ReviewController::class, 'update']);
