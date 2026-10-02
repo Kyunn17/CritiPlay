@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 
 class UserController extends Controller
 {
-    public function publicProfile($id)
+    public function publicProfile(Request $request, $id)
     {
         $user = User::find($id);
 
@@ -15,7 +15,6 @@ class UserController extends Controller
             return response()->json(['message' => 'User tidak ditemukan.'], 404);
         }
 
-        // 2. Hitung statistik Library
         $libraryStats = [
             'total_games'  => $user->games()->count(),
             'completed'    => $user->games()->wherePivot('status', 'completed')->count(),
@@ -24,16 +23,16 @@ class UserController extends Controller
             'dropped'      => $user->games()->wherePivot('status', 'dropped')->count(),
         ];
 
-        // 3. Hitung total review
         $totalReviews = $user->reviews()->count();
-
-        // 4. Ambil 5 game terakhir yang ditambahin ke library dia
         $recentGames = $user->games()
             ->orderByPivot('updated_at', 'desc')
             ->limit(5)
             ->get();
 
-        // 5. Kembalikan data (TANPA EMAIL biar aman)
+        $isFollowing = \App\Models\Follow::where('follower_id', $request->user()->id)
+            ->where('following_id', $user->id)
+            ->exists();
+
         return response()->json([
             'user' => [
                 'id'        => $user->id,
@@ -44,6 +43,9 @@ class UserController extends Controller
             'stats' => [
                 'library'       => $libraryStats,
                 'total_reviews' => $totalReviews,
+                'followers_count' => $user->followers()->count(),
+                'following_count' => $user->following()->count(),
+                'is_following'    => $isFollowing, 
             ],
             'recent_activity' => $recentGames,
         ], 200);
@@ -59,7 +61,7 @@ class UserController extends Controller
         $currentUserId = $request->user()->id;
 
         $users = User::where('name', 'like', '%' . $query . '%')
-            ->where('id', '!=', $currentUserId) // nggak usah nampilin diri sendiri
+            ->where('id', '!=', $currentUserId) // jangan include diri sendiri
             ->limit(20)
             ->get()
             ->map(function ($user) {

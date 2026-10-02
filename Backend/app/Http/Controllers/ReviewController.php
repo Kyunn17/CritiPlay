@@ -6,27 +6,32 @@ use App\Models\Game;
 use App\Models\Review;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use App\Models\ReviewHelpfulVote;
 
 class ReviewController extends Controller
 {
-    public function getByGame($gameId)
+    public function getByGame(Request $request, $gameId)
     {
+        $currentUserId = $request->user()->id;
+
         $reviews = Review::where('game_id', $gameId)
-            ->with('user')
+            ->with('user', 'helpfulVotes')
             ->orderBy('created_at', 'desc')
             ->get()
-            ->map(function ($review) {
+            ->map(function ($review) use ($currentUserId) {
                 return [
                     'id'             => (string) $review->id,
                     'gameId'         => (string) $review->game_id,
                     'userId'         => (string) $review->user_id,
-                    'name'           => $review->user->name ?? 'Unknown',
-                    'avatar'         => $review->user->avatar ?? null,
+                    'userName'       => $review->user->name ?? 'Unknown',
+                    'userAvatar'     => $review->user->avatar ? asset('storage/' . $review->user->avatar) : null,
                     'ratingGameplay' => $review->rating_gameplay,
                     'ratingStory'    => $review->rating_story,
                     'ratingVisual'   => $review->rating_visual,
                     'ratingOverall'  => $review->rating_overall,
                     'reviewText'     => $review->review_text,
+                    'helpfulCount'   => $review->helpfulVotes->count(),
+                    'isHelpfulByMe'  => $review->helpfulVotes->contains('user_id', $currentUserId),
                     'dateAdded'      => $review->created_at->toISOString(),
                 ];
             });
@@ -124,4 +129,31 @@ class ReviewController extends Controller
             'total_reviews' => $stats->total,
         ]);
     }
+
+    public function toggleHelpful(Request $request, $reviewId)
+    {
+        $review = Review::find($reviewId);
+        if (!$review) {
+            return response()->json(['message' => 'Review tidak ditemukan.'], 404);
+        }
+
+        $userId = $request->user()->id;
+        $vote = ReviewHelpfulVote::where('user_id', $userId)
+            ->where('review_id', $reviewId)
+            ->first();
+
+        if ($vote) {
+            $vote->delete();
+            $isHelpful = false;
+        } else {
+            ReviewHelpfulVote::create(['user_id' => $userId, 'review_id' => $reviewId]);
+            $isHelpful = true;
+        }
+
+        return response()->json([
+            'message'       => $isHelpful ? 'Ditandai helpful.' : 'Batal helpful.',
+            'is_helpful'    => $isHelpful,
+            'helpful_count' => $review->helpfulVotes()->count(),
+        ]);
+    }    
 }

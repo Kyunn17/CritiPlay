@@ -10,6 +10,8 @@ use App\Http\Controllers\GameSearchController;
 use App\Http\Controllers\GameImportController;
 use App\Http\Controllers\LibraryController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\FollowController;
+use App\Http\Controllers\ReviewDiscussionController;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login'])->name('login');
@@ -26,8 +28,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/profile', [AuthController::class, 'profile']);
     Route::post('/profile', [AuthController::class, 'updateProfile']);
+
     Route::get('/users/search', [UserController::class, 'search']);
     Route::get('/users/{id}/profile', [UserController::class, 'publicProfile']);
+    Route::post('/users/{userId}/follow', [FollowController::class, 'follow']);
+    Route::delete('/users/{userId}/follow', [FollowController::class, 'unfollow']);
+    Route::get('/users/{userId}/followers', [FollowController::class, 'followers']);
+    Route::get('/users/{userId}/following', [FollowController::class, 'following']);
 
     Route::get('/games/search', [GameSearchController::class, 'search']);
     Route::post('/games/import', [GameImportController::class, 'import']);
@@ -38,6 +45,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('reviews', [ReviewController::class, 'store']);
     Route::put('reviews/{id}', [ReviewController::class, 'update']);
     Route::delete('reviews/{id}', [ReviewController::class, 'destroy']);
+    Route::post('/reviews/{id}/helpful', [ReviewController::class, 'toggleHelpful']);
+    Route::get('/reviews/{id}/discussions', [ReviewDiscussionController::class, 'index']);
+    Route::post('/reviews/{id}/discussions', [ReviewDiscussionController::class, 'store']);
+    Route::delete('/discussions/{id}', [ReviewDiscussionController::class, 'destroy']);
 
     Route::middleware('admin')->prefix('admin')->group(function () {
         Route::get('/users', [AdminController::class, 'getAllUsers']);

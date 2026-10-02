@@ -28,4 +28,15 @@ class Review extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function helpfulVotes()
+    {
+        return $this->hasMany(ReviewHelpfulVote::class);
+    }
+
+    public function discussions()
+    {
+        return $this->hasMany(ReviewDiscussion::class);
+    }
+    
 }
