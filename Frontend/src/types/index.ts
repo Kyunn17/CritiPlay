@@ -34,7 +34,8 @@ export interface Review {
   id: string;
   gameId: string;
   userId: string;
-  userName: string;
+  name: string;
+  avatar: string | null;
   ratingGameplay: number;
   ratingStory: number;
   ratingVisual: number;

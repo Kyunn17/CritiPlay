@@ -231,7 +231,7 @@ setAvatar(data.user.avatar);
                 />
               ) : avatar ? (
                 <img
-                  src={avatar}
+                  src={`http://127.0.0.1:8000/storage/${avatar}`}
                   alt={name}
                   className="w-full h-full object-cover"
                 />
