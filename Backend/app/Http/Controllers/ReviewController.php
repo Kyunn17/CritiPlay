@@ -12,6 +12,7 @@ class ReviewController extends Controller
     public function getByGame($gameId)
     {
         $reviews = Review::where('game_id', $gameId)
+            ->with('user')
             ->orderBy('created_at', 'desc')
             ->get()
             ->map(function ($review) {
@@ -19,6 +20,8 @@ class ReviewController extends Controller
                     'id'             => (string) $review->id,
                     'gameId'         => (string) $review->game_id,
                     'userId'         => (string) $review->user_id,
+                    'name'           => $review->user->name ?? 'Unknown',
+                    'avatar'         => $review->user->avatar ?? null,
                     'ratingGameplay' => $review->rating_gameplay,
                     'ratingStory'    => $review->rating_story,
                     'ratingVisual'   => $review->rating_visual,
