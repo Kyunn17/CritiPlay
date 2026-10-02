@@ -17,16 +17,22 @@ export default function ReviewCard({
       <div className="flex justify-between items-start mb-5">
         <div>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
-              {review.userName?.charAt(0).toUpperCase() ?? 'U'}
-            </div>
+            <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold overflow-hidden">
+  {review.avatar ? (
+    <img
+      src={`http://127.0.0.1:8000/storage/${review.avatar}`}
+      alt={review.name}
+      className="w-full h-full object-cover"
+    />
+  ) : (
+    review.name?.charAt(0).toUpperCase() ?? 'U'
+  )}
+</div>
 
-            <div>
-              <p className="font-bold text-slate-800">
-                User #
-                {review.userId}
-              </p>
-
+<div>
+  <p className="font-bold text-slate-800">
+    {review.name}
+  </p>
               <p className="text-sm text-slate-400">
                 {new Date(
                   review.dateAdded
