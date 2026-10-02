@@ -9,8 +9,13 @@ export interface Game {
   genres: string[];
   platforms: string[];
   summary: string | null;
-}
 
+  avgGameplay: number;
+  avgStory: number;
+  avgVisual: number;
+  avgOverall: number;
+  totalReviews: number;
+}
 export interface ExternalGame {
   igdb_id: number;
   name: string;
@@ -28,9 +33,12 @@ export interface RatingAspect {
 export interface Review {
   id: string;
   gameId: string;
-  status: GameStatus;
-  aspectRatings: RatingAspect[];
-  overallRating: number;
-  content: string;
+  userId: string;
+  userName: string;
+  ratingGameplay: number;
+  ratingStory: number;
+  ratingVisual: number;
+  ratingOverall: number;
+  reviewText: string | null;
   dateAdded: string;
 }

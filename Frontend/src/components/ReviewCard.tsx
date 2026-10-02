@@ -2,63 +2,114 @@ import type { Review } from '../types';
 
 interface ReviewCardProps {
   review: Review;
-  onDelete?: (id: string) => void;
-  onEdit?: (review: Review) => void; // <--- Fungsi Edit
+  onDelete: (reviewId: string) => void;
+  onEdit: (review: Review) => void;
 }
 
-export default function ReviewCard({ review, onDelete, onEdit }: ReviewCardProps) {
-  const formattedDate = new Date(review.dateAdded).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'Completed': return 'bg-green-100 text-green-700';
-      case 'Playing': return 'bg-blue-100 text-blue-700';
-      case 'Dropped': return 'bg-red-100 text-red-700';
-      case 'Plan to Play': return 'bg-purple-100 text-purple-700';
-      default: return 'bg-slate-100 text-slate-700';
-    }
-  };
-
+export default function ReviewCard({
+  review,
+  onDelete,
+  onEdit
+}: ReviewCardProps) {
   return (
-    <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 transition-all hover:shadow-md relative group">
-      
-      {/* Tombol Aksi Kanan Atas */}
-      <div className="absolute top-6 right-6 flex gap-2">
-        {onEdit && (
-          <button onClick={() => onEdit(review)} className="text-slate-300 hover:text-blue-500 transition-colors bg-white rounded-md p-1" title="Edit Jurnal">
-            ✏️
+    <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+      {/* User + Date */}
+      <div className="flex justify-between items-start mb-5">
+        <div>
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold">
+              {review.userName?.charAt(0).toUpperCase() ?? 'U'}
+            </div>
+
+            <div>
+              <p className="font-bold text-slate-800">
+                User #
+                {review.userId}
+              </p>
+
+              <p className="text-sm text-slate-400">
+                {new Date(
+                  review.dateAdded
+                ).toLocaleDateString('id-ID', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric'
+                })}
+              </p>
+            </div>
+          </div>
+
+          {/* Overall */}
+          <div className="mt-4 flex items-baseline gap-2">
+            <span className="text-3xl font-extrabold text-amber-500">
+              {Number(review.ratingOverall).toFixed(1)}
+            </span>
+
+            <span className="text-sm text-slate-400">
+              / 10 Overall
+            </span>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => onEdit(review)}
+            className="px-3 py-2 rounded-lg bg-blue-50 text-blue-600 text-sm font-semibold hover:bg-blue-100"
+          >
+            Edit
           </button>
-        )}
-        {onDelete && (
-          <button onClick={() => onDelete(review.id)} className="text-slate-300 hover:text-red-500 transition-colors bg-white rounded-md p-1" title="Hapus Jurnal">
-            🗑️
+
+          <button
+            onClick={() => onDelete(review.id)}
+            className="px-3 py-2 rounded-lg bg-red-50 text-red-600 text-sm font-semibold hover:bg-red-100"
+          >
+            Hapus
           </button>
-        )}
+        </div>
       </div>
 
-      <div className="flex justify-between items-start mb-4 pr-16">
-        <div>
-          <span className={`inline-block px-3 py-1 text-sm font-bold rounded-lg mb-2 ${getStatusColor(review.status)}`}>
-            {review.status}
-          </span>
-          <p className="text-slate-400 text-sm">{formattedDate}</p>
+      {/* Rating Detail */}
+      <div className="grid grid-cols-3 gap-3 mb-5">
+        <div className="bg-slate-50 rounded-xl p-3 text-center">
+          <p className="text-xs text-slate-400 font-semibold mb-1">
+            Gameplay
+          </p>
+
+          <p className="text-xl font-bold text-slate-800">
+            {Number(review.ratingGameplay).toFixed(1)}
+          </p>
         </div>
-        
-        <div className="bg-blue-600 text-white w-14 h-14 rounded-full flex items-center justify-center text-xl font-bold shadow-md">
-          {review.overallRating}
+
+        <div className="bg-slate-50 rounded-xl p-3 text-center">
+          <p className="text-xs text-slate-400 font-semibold mb-1">
+            Story
+          </p>
+
+          <p className="text-xl font-bold text-slate-800">
+            {Number(review.ratingStory).toFixed(1)}
+          </p>
+        </div>
+
+        <div className="bg-slate-50 rounded-xl p-3 text-center">
+          <p className="text-xs text-slate-400 font-semibold mb-1">
+            Visual
+          </p>
+
+          <p className="text-xl font-bold text-slate-800">
+            {Number(review.ratingVisual).toFixed(1)}
+          </p>
         </div>
       </div>
-      
-      <p className="text-slate-700 leading-relaxed mb-6">{review.content}</p>
-      
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-slate-50">
-        {review.aspectRatings.map((aspect) => (
-          <div key={aspect.aspect} className="bg-slate-50 p-3 rounded-xl flex flex-col items-center">
-            <span className="text-slate-500 text-xs uppercase font-semibold">{aspect.aspect}</span>
-            <span className="text-slate-800 font-bold text-lg">{aspect.score}/10</span>
-          </div>
-        ))}
-      </div>
+
+      {/* Comment */}
+      {review.reviewText && (
+        <div className="border-t border-slate-100 pt-5">
+          <p className="text-slate-600 leading-relaxed">
+            {review.reviewText}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

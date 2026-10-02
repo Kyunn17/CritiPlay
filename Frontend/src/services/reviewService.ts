@@ -11,40 +11,82 @@ const getHeaders = () => ({
 
 export const reviewService = {
   getReviewsByGameId: async (gameId: string): Promise<Review[]> => {
-    const response = await fetch(`${API_URL}/games/${gameId}/reviews`, { headers: getHeaders() });
-    if (!response.ok) return [];
-    return response.json();
+    const response = await fetch(`${API_URL}/games/${gameId}/reviews`, {
+      headers: getHeaders()
+    });
+
+    if (!response.ok) {
+      return [];
+    }
+
+    const data = await response.json();
+
+return data.map((review: Review) => ({
+  ...review,
+  ratingGameplay: Number(review.ratingGameplay),
+  ratingStory: Number(review.ratingStory),
+  ratingVisual: Number(review.ratingVisual),
+  ratingOverall: Number(review.ratingOverall)
+}));
   },
 
-  saveReview: async (newReview: Review): Promise<Review> => {
+  saveReview: async (
+    gameId: string,
+    ratingGameplay: number,
+    ratingStory: number,
+    ratingVisual: number,
+    reviewText: string
+  ): Promise<void> => {
     const response = await fetch(`${API_URL}/reviews`, {
       method: 'POST',
       headers: getHeaders(),
-      body: JSON.stringify(newReview)
+      body: JSON.stringify({
+        game_id: gameId,
+        rating_gameplay: ratingGameplay,
+        rating_story: ratingStory,
+        rating_visual: ratingVisual,
+        review_text: reviewText
+      })
     });
+
     const data = await response.json();
-    return { ...newReview, id: data.id };
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Gagal menyimpan review');
+    }
   },
 
-  updateReview: async (id: string, updatedData: Partial<Review>): Promise<Review | undefined> => {
+  updateReview: async (
+    id: string,
+    ratingGameplay: number,
+    ratingStory: number,
+    ratingVisual: number,
+    reviewText: string
+  ): Promise<void> => {
     const response = await fetch(`${API_URL}/reviews/${id}`, {
       method: 'PUT',
       headers: getHeaders(),
-      body: JSON.stringify(updatedData)
+      body: JSON.stringify({
+        rating_gameplay: ratingGameplay,
+        rating_story: ratingStory,
+        rating_visual: ratingVisual,
+        review_text: reviewText
+      })
     });
-    if (!response.ok) return undefined;
-    return { id, ...updatedData } as Review;
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.message || 'Gagal mengupdate review');
+    }
   },
 
   deleteReview: async (id: string): Promise<boolean> => {
-  const response = await fetch(`${API_URL}/reviews/${id}`, { 
-    method: 'DELETE',
-    headers: getHeaders()
-  });
-  return response.ok;
-},
+    const response = await fetch(`${API_URL}/reviews/${id}`, {
+      method: 'DELETE',
+      headers: getHeaders()
+    });
 
-deleteReviewsByGameId: async (): Promise<void> => {
-  return Promise.resolve();
-}
+    return response.ok;
+  }
 };
